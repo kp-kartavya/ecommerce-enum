@@ -144,7 +144,7 @@ class EcommerceSwapnilApplicationTests {
 		String jwt = loginHelper(cu, p).getContentAsString();
 
 		System.out.println("JWT TOKEN" + jwt);
-		mvc.perform(get("/api/auth/consumer/cart").header("Authorization", "Bearer " + jwt)).andExpect(status().is(200))
+		mvc.perform(get("/api/auth/consumer/cart").header("Authorization", jwt)).andExpect(status().is(200))
 				.andExpect(jsonPath("$.cartId", is(not(equalTo("")))))
 				.andExpect(jsonPath("$.cartProducts[0].quantity", is(2)))
 				.andExpect(jsonPath("$.cartProducts[0].product.productName",
@@ -156,7 +156,7 @@ class EcommerceSwapnilApplicationTests {
 	@Order(13)
 	public void sellerApiWithConsumerJWT() throws Exception {
 		mvc.perform(get("/api/auth/seller/product").header("Authorization",
-				"Bearer " + loginHelper(cu, p).getContentAsString())).andExpect(status().is(403));
+				loginHelper(cu, p).getContentAsString())).andExpect(status().is(403));
 	}
 
 	@Test
@@ -170,7 +170,7 @@ class EcommerceSwapnilApplicationTests {
 	@Order(15)
 	public void sellerGetProductsWithValidJWT() throws Exception {
 		mvc.perform(get("/api/auth/seller/product").header("Authorization",
-				"Bearer " + loginHelper(su, p).getContentAsString())).andExpect(status().is(200))
+				loginHelper(su, p).getContentAsString())).andExpect(status().is(200))
 				.andExpect(jsonPath("$.[0].productId", is(not(equalTo("")))))
 				.andExpect(jsonPath("$.[0].productName",
 						containsStringIgnoringCase("Apple iPad 10.2 8th Gen WiFi 10S Tablet")))
@@ -181,7 +181,7 @@ class EcommerceSwapnilApplicationTests {
 	@Order(16)
 	public void consumerApiWithSellerJWT() throws Exception {
 		mvc.perform(get("/api/auth/consumer/cart").header("Authorization",
-				"Bearer " + loginHelper(su, p).getContentAsString())).andExpect(status().is(403));
+				loginHelper(su, p).getContentAsString())).andExpect(status().is(403));
 	}
 
 	public JSONObject getProduct(int id, String name, Double price, int cId, String cName) {
@@ -210,7 +210,7 @@ class EcommerceSwapnilApplicationTests {
 	public void sellerAddNewProduct() throws Exception {
 		createdURI = mvc
 				.perform(post("/api/auth/seller/product")
-						.header("Authorization", "Bearer " + loginHelper(su, p).getContentAsString())
+						.header("Authorization", loginHelper(su, p).getContentAsString())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(getProduct(3, "IPhone 11", 49000.0, 2, "Electronics").toJSONString()))
 				.andExpect(status().is(201)).andReturn().getResponse().getRedirectedUrl();
@@ -222,12 +222,12 @@ class EcommerceSwapnilApplicationTests {
 	public void sellerCheckAddedNewProduct() throws Exception {
 		System.out.println("sellerCheckAddedNewProduct ++ " + createdURI);
 		mvc.perform(get(new URL(createdURI).getPath()).header("Authorization",
-				"Bearer " + loginHelper(su, p).getContentAsString())).andExpect(status().is(200))
+				loginHelper(su, p).getContentAsString())).andExpect(status().is(200))
 				.andExpect(jsonPath("$.productId", is(3))).andExpect(jsonPath("$.price", is(49000.0)))
 				.andExpect(jsonPath("$.productName", is("IPhone 11")))
 				.andExpect(jsonPath("$.category.categoryName", is("Electronics")));
 		mvc.perform(get("/api/auth/seller/product").header("Authorization",
-				"Bearer " + loginHelper(su, p).getContentAsString())).andExpect(status().is(200))
+				loginHelper(su, p).getContentAsString())).andExpect(status().is(200))
 				.andExpect(content().string(containsString("IPhone 11")));
 	}
 
@@ -236,9 +236,9 @@ class EcommerceSwapnilApplicationTests {
 	@Order(19)
 	public void sellerCheckProductFromAnotherSeller() throws Exception {
 		mvc.perform(get(new URL(createdURI).getPath()).header("Authorization",
-				"Bearer " + loginHelper("glaxo", p).getContentAsString())).andExpect(status().is(404));
+				loginHelper("glaxo", p).getContentAsString())).andExpect(status().is(404));
 		mvc.perform(get("/api/auth/seller/product").header("Authorization",
-				"Bearer " + loginHelper("glaxo", p).getContentAsString())).andExpect(status().is(200))
+				loginHelper("glaxo", p).getContentAsString())).andExpect(status().is(200))
 				.andExpect(content().string(not(containsString("IPhone 11"))));
 	}
 
@@ -247,27 +247,25 @@ class EcommerceSwapnilApplicationTests {
 	@Order(20)
 	public void sellerUpdateProduct() throws Exception {
 		String[] arr = createdURI.split("/");
-		mvc.perform(put("/api/auth/seller/product")
-				.header("Authorization", "Bearer " + loginHelper(su, p).getContentAsString())
+		mvc.perform(put("/api/auth/seller/product").header("Authorization", loginHelper(su, p).getContentAsString())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(getProduct(Integer.valueOf(arr[arr.length - 1]), "iPhone 12", 98888.0, 2, "Electronics")
 						.toJSONString()))
 				.andExpect(status().is(200));
 		mvc.perform(get(new URL(createdURI).getPath()).header("Authorization",
-				"Bearer " + loginHelper(su, p).getContentAsString())).andExpect(status().is(200))
+				loginHelper(su, p).getContentAsString())).andExpect(status().is(200))
 				.andExpect(jsonPath("$.productId", is(Integer.valueOf(arr[arr.length - 1]))))
 				.andExpect(jsonPath("$.productName", is("iPhone 12"))).andExpect(jsonPath("$.price", is(98888.0)))
 				.andExpect(jsonPath("$.category.categoryName", is("Electronics")));
 		mvc.perform(get("/api/auth/seller/product").header("Authorization",
-				"Bearer " + loginHelper(su, p).getContentAsString())).andExpect(status().is(200))
+				loginHelper(su, p).getContentAsString())).andExpect(status().is(200))
 				.andExpect(content().string(containsString("iPhone 12")));
 	}
 
 	@Test
 	@Order(21)
 	public void sellerUpdateProductWithWrongProductId() throws Exception {
-		mvc.perform(put("/api/auth/seller/product")
-				.header("Authorization", "Bearer " + loginHelper(su, p).getContentAsString())
+		mvc.perform(put("/api/auth/seller/product").header("Authorization", loginHelper(su, p).getContentAsString())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(getProduct(55, "iPhone 12", 98008.0, 2, "Electronics").toJSONString()))
 				.andExpect(status().is(404));
@@ -280,16 +278,15 @@ class EcommerceSwapnilApplicationTests {
 		System.out.println("createdURI :: " + createdURI);
 
 		mvc.perform(get("/api/auth/consumer/cart").header("Authorization",
-				"Bearer " + loginHelper(cu, p).getContentAsString()))
+				loginHelper(cu, p).getContentAsString()))
 				.andExpect(content().string(not(containsString("iPhone 12"))));
-		mvc.perform(post("/api/auth/consumer/cart")
-				.header("Authorization", "Bearer " + loginHelper(cu, p).getContentAsString())
+		mvc.perform(post("/api/auth/consumer/cart").header("Authorization", loginHelper(cu, p).getContentAsString())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(getProduct(Integer.valueOf(arr[arr.length - 1]), "iPhone 12", 98800.8, 2, "Electronics")
 						.toJSONString()))
 				.andExpect(status().is(200));
 		mvc.perform(get("/api/auth/consumer/cart").header("Authorization",
-				"Bearer " + loginHelper(cu, p).getContentAsString()))
+				loginHelper(cu, p).getContentAsString()))
 				.andExpect(content().string(containsString("iPhone 12")));
 	}
 
@@ -297,8 +294,7 @@ class EcommerceSwapnilApplicationTests {
 	@Order(23)
 	public void consumerAddProductToCartAgain() throws Exception {
 		String[] arr = createdURI.split("/");
-		mvc.perform(post("/api/auth/consumer/cart")
-				.header("Authorization", "Bearer " + loginHelper(cu, p).getContentAsString())
+		mvc.perform(post("/api/auth/consumer/cart").header("Authorization", loginHelper(cu, p).getContentAsString())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(getProduct(Integer.valueOf(arr[arr.length - 1]), "iPhone 12", 98000.0, 2, "Electronics")
 						.toJSONString()))
@@ -319,15 +315,14 @@ class EcommerceSwapnilApplicationTests {
 	@Order(24)
 	public void consumerUpdateProductInCart() throws Exception {
 		String[] arr = createdURI.split("/");
-		mvc.perform(put("/api/auth/consumer/cart")
-				.header("Authorization", "Bearer " + loginHelper(cu, p).getContentAsString())
+		mvc.perform(put("/api/auth/consumer/cart").header("Authorization", loginHelper(cu, p).getContentAsString())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(getCartProduct(
 						getProduct(Integer.valueOf(arr[arr.length - 1]), "iPhone 12", 98000.0, 2, "Electronics"), 3)
 						.toJSONString()))
 				.andExpect(status().is(200));
 		mvc.perform(get("/api/auth/consumer/cart").header("Authorization",
-				"Bearer " + loginHelper(cu, p).getContentAsString())).andExpect(status().is(200))
+				loginHelper(cu, p).getContentAsString())).andExpect(status().is(200))
 				.andExpect(jsonPath("$.cartId", is(not(equalTo("")))))
 				.andExpect(jsonPath("$.cartProducts[1].quantity", is(3)))
 				.andExpect(jsonPath("$.cartProducts[1].product.productName", containsStringIgnoringCase("iphone 12")))
@@ -339,8 +334,7 @@ class EcommerceSwapnilApplicationTests {
 	public void consumerUpdateProductInCartWithZeroQuantity() throws Exception {
 		String[] arr = createdURI.split("/");
 
-		mvc.perform(put("/api/auth/consumer/cart")
-				.header("Authorization", "Bearer " + loginHelper(cu, p).getContentAsString())
+		mvc.perform(put("/api/auth/consumer/cart").header("Authorization", loginHelper(cu, p).getContentAsString())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(getCartProduct(
 						getProduct(Integer.valueOf(arr[arr.length - 1]), "iPhone 12", 98000.8, 2, "Electronics"), 0)
@@ -348,7 +342,7 @@ class EcommerceSwapnilApplicationTests {
 				.andExpect(status().is(200));
 
 		mvc.perform(get("/api/auth/consumer/cart").header("Authorization",
-				"Bearer " + loginHelper(cu, p).getContentAsString())).andExpect(status().is(200))
+				loginHelper(cu, p).getContentAsString())).andExpect(status().is(200))
 				.andExpect(jsonPath("$.cartId", is(not(equalTo(""))))).andExpect(jsonPath("$.cartProducts", hasSize(1)))
 				.andExpect(jsonPath("$.cartProducts[0].quantity", is(2)))
 				.andExpect(jsonPath("$.cartProducts[0].product.productName",
@@ -361,14 +355,13 @@ class EcommerceSwapnilApplicationTests {
 	public void consumerDeleteProductInCart() throws Exception {
 		System.out.println(
 				"jsonString :: " + getProduct(2, "Crocin pain relief tablet", 10.0, 5, "Medicines").toJSONString());
-		mvc.perform(delete("/api/auth/consumer/cart")
-				.header("Authorization", "Bearer " + loginHelper(cu, p).getContentAsString())
+		mvc.perform(delete("/api/auth/consumer/cart").header("Authorization", loginHelper(cu, p).getContentAsString())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(getProduct(2, "Crocin pain relief tablet", 10.0, 5, "Medicines").toJSONString()))
 				.andExpect(status().is(200)); // (int id, String name, Double price, int cId, String cName)
 
 		mvc.perform(get("/api/auth/consumer/cart").header("Authorization",
-				"Bearer " + loginHelper(cu, p).getContentAsString())).andExpect(status().is(200))
+				loginHelper(cu, p).getContentAsString())).andExpect(status().is(200))
 				.andExpect(jsonPath("$.cartId", is(not(equalTo("")))))
 				.andExpect(jsonPath("$.cartProducts", hasSize(0)));
 
@@ -379,11 +372,10 @@ class EcommerceSwapnilApplicationTests {
 	public void sellerDeleteProduct() throws Exception {
 		String[] arr = createdURI.split("/");
 		mvc.perform(delete("/api/auth/seller/product/" + Integer.valueOf(arr[arr.length - 1])).header("Authorization",
-				"Bearer " + loginHelper(su, p).getContentAsString())).andExpect(status().is(200));
+				loginHelper(su, p).getContentAsString())).andExpect(status().is(200));
 		mvc.perform(get("/api/auth/seller/product/" + Integer.valueOf(arr[arr.length - 1])).header("Authorization",
-				"Bearer " + loginHelper(su, p).getContentAsString())).andExpect(status().is(404));
+				loginHelper(su, p).getContentAsString())).andExpect(status().is(404));
 
 	}
-
 
 }

@@ -50,7 +50,7 @@ public class PublicController {
 		try {
 			auth.authenticate(
 					new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
-			return ResponseEntity.ok(jwtToken.generateToken(request.getUsername()));
+			return ResponseEntity.ok("Bearer " + jwtToken.generateToken(request.getUsername()));
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed");
 		}
